@@ -1,56 +1,63 @@
 import { Injectable } from '@angular/core';
-import { LoadingController } from '@ionic/angular';
+import { ModalController } from '@ionic/angular';
+import { ModalCustomLoadingComponent } from 'src/app/modals/modal-custom-loading/modal-custom-loading.component';
 
 @Injectable({ providedIn: 'root' })
 export class LoadingService {
-  private loading?: HTMLIonLoadingElement;
+
+  private modal?: HTMLIonModalElement;
   private loadingCount = 0;
   private timeoutId?: any;
 
-  constructor(private loadingCtrl: LoadingController) {}
+  constructor(private modalCtrl: ModalController) {}
 
   async show(message: string = 'Cargando...') {
     this.loadingCount++;
 
-    if (!this.loading) {
-      this.loading = await this.loadingCtrl.create({
-        message,
-        spinner: 'crescent',
-        translucent: true,
-        backdropDismiss: false
+    if (!this.modal) {
+      this.modal = await this.modalCtrl.create({
+        component: ModalCustomLoadingComponent,
+        componentProps: { message },
+        cssClass: 'modal-loading',
+        backdropDismiss: false,
+        showBackdrop: true
       });
-      await this.loading.present();
 
-      // Seguridad: cerrar después de 10s máximo
-      this.timeoutId = setTimeout(() => {
-        this.forceHide();
-      }, 10000);
+      await this.modal.present();
+
+      // Timeout de seguridad
+      // this.timeoutId = setTimeout(() => {
+      //   this.forceHide();
+      // }, 20000);
     }
   }
 
   async hide() {
     this.loadingCount--;
 
-    if (this.loadingCount <= 0 && this.loading) {
-      await this.loading.dismiss();
-      this.loading = undefined;
+    if (this.loadingCount <= 0 && this.modal) {
+      await this.modal.dismiss();
+      this.modal = undefined;
       this.loadingCount = 0;
 
-      // limpiar timeout
       if (this.timeoutId) {
         clearTimeout(this.timeoutId);
         this.timeoutId = undefined;
       }
+    } else if (this.loadingCount == 0 && !this.modal) {
+      this.timeoutId = setTimeout(() => {
+        this.forceHide();
+      }, 1000);
     }
   }
 
   private async forceHide() {
-    if (this.loading) {
-      await this.loading.dismiss();
-      this.loading = undefined;
+    if (this.modal) {
+      await this.modal.dismiss();
+      this.modal = undefined;
       this.loadingCount = 0;
       this.timeoutId = undefined;
-      console.warn('⏳ Loading cerrado automáticamente por timeout');
+      console.warn('⏳ Loading personalizado cerrado por timeout');
     }
   }
 }
